@@ -1,0 +1,19 @@
+insert into finite_load values (
+  :contract,
+  :part_no,
+  :bom_type_db,
+  :routing_revision_no,
+  :routing_alternative_no,
+  :crp_source_db,
+  :order_ref,
+  :order_no,
+  :release_no,
+  :sequence_no,
+  :operation_no,
+  :work_center_no,
+  :expected_start_date,
+  :total_duration,
+  :work_day,
+  :scheduled_duration,
+  sysdate
+)

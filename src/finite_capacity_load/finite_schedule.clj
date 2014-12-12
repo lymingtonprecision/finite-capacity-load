@@ -42,20 +42,23 @@
   `capacity` should be a sequence of maps with `:work_day` and
   `:capacity_available` entries.
 
-  `order` should be a map with `:start_date` and `:duration` entries."
+  `order` should be a map with `:expected_start_date` and `:total_duration`
+  entries."
   [capacity order]
-  (rest
-    (reduce
-      (fn [[rlh consumed unconsumed] d]
-        (let [ch (min rlh (remaining-capacity d))
-              rlh (- rlh ch)
-              ld (if (zero? ch) d (update-load d order ch))
-              rh (remaining-capacity ld)
-              cd (if (zero? rh) (conj consumed ld) consumed)
-              ucd (if (pos? rh) (conj unconsumed ld) unconsumed)]
-          [rlh cd ucd]))
-      [(:duration order) [] (subseq capacity < {:work_day (:start_date order)})]
-      (subseq capacity >= {:work_day (:start_date order)}))))
+  (let [d (:total_duration order)
+        sd (:expected_start_date order)]
+    (rest
+      (reduce
+        (fn [[rlh consumed unconsumed] d]
+          (let [ch (min rlh (remaining-capacity d))
+                rlh (- rlh ch)
+                ld (if (zero? ch) d (update-load d order ch))
+                rh (remaining-capacity ld)
+                cd (if (zero? rh) (conj consumed ld) consumed)
+                ucd (if (pos? rh) (conj unconsumed ld) unconsumed)]
+            [rlh cd ucd]))
+        [d [] (subseq capacity < {:work_day sd})]
+        (subseq capacity >= {:work_day sd})))))
 
 (defn finite-scheduler
   "A finite scheduling transducer"

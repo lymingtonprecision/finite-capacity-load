@@ -9,7 +9,7 @@
 (def default-options
   (merge
     hk/default-datasource-options
-    {:auto-commit false
+    {:auto-commit true
      :read-only false
      :minimum-idle 2
      :maximum-pool-size 10
