@@ -15,6 +15,7 @@
                  [org.clojure/java.jdbc "0.3.6"]
                  [org.clojars.zentrope/ojdbc "11.2.0.3.0"]
                  [hikari-cp "0.12.0"]
-                 [yesql "0.4.0"]]
+                 [yesql "0.4.0"]
+                 [ragtime "0.3.8"]]
 
   :profiles {:dev {:dependencies [[org.clojure/tools.namespace "0.2.7"]]}})

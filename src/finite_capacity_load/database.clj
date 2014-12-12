@@ -1,7 +1,10 @@
 (ns finite-capacity-load.database
   (:require [com.stuartsierra.component :as component]
             [clojure.java.jdbc :as jdbc]
-            [hikari-cp.core :as hk]))
+            [hikari-cp.core :as hk]
+            [ragtime.core :as rt]
+            [ragtime.sql.database :as rt-db]
+            [ragtime.sql.files :as rt-files]))
 
 (def default-options
   (merge
@@ -39,13 +42,18 @@
 (defn merge-options-with-env [env]
   (merge default-options (extract-options-from-env env)))
 
+(defn migrations []
+  (rt-files/migrations "src/finite_capacity_load/migrations"))
+
 (defrecord Database [env]
   component/Lifecycle
   (start [this]
-    (let [o (merge-options-with-env env)]
+    (let [o (merge-options-with-env env)
+          ds (hk/make-datasource o)]
+      (rt/migrate-all (rt-db/map->SqlDatabase {:datasource ds}) (migrations))
       (assoc this
              :options o
-             :datasource (hk/make-datasource o))))
+             :datasource ds)))
 
   (stop [this]
     (if-let [ds (:datasource this)]
