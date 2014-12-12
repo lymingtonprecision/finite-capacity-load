@@ -10,7 +10,7 @@
                  [com.stuartsierra/component "0.2.2"]
                  [environ "1.0.0"]
 
-                 [org.spootnik/logconfig "0.7.2"]
+                 [org.spootnik/logconfig "0.7.3"]
 
                  [org.clojure/java.jdbc "0.3.6"]
                  [org.clojars.zentrope/ojdbc "11.2.0.3.0"]
