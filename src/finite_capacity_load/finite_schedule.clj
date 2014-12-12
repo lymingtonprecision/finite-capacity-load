@@ -1,4 +1,4 @@
-(ns finite-capacity-load.finite-load
+(ns finite-capacity-load.finite-schedule
   (:require [clojure.core.async :refer (go) :as async]
             [clojure.tools.logging :as log]))
 
