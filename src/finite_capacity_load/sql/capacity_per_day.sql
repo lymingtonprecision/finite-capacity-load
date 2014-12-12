@@ -1,20 +1,20 @@
 select
   wc.work_center_no,
   wtc.work_day,
-  sum(
+  round(sum(
     nvl(
       wtc.working_time
       * (ra.efficiency / 100)
       * (wc.utilization / 100),
       0
-    ) / 60
+    )
     - nvl(
       ifsapp.work_center_int_api.work_center_maint_load(
         wtc.work_day, wc.contract, wc.work_center_no
       ),
       0
-    )
-  ) hours_available
+    ) * 60
+  ), 0) capacity_available
 from ifsapp.work_center wc
 join ifsapp.work_time_counter wtc
   on wc.calendar_id = wtc.calendar_id
