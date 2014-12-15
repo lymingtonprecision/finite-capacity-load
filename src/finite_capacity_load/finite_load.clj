@@ -4,6 +4,7 @@
             [yesql.core :refer [defquery]]))
 
 (defquery drop! "finite_capacity_load/sql/drop_finite_load.sql")
+(defquery drop-work-center! "finite_capacity_load/sql/drop_finite_load_wc.sql")
 (defquery insert! "finite_capacity_load/sql/insert_finite_load.sql")
 
 (defn order-ref [o]

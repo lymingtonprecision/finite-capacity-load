@@ -2,6 +2,10 @@ select
   wc.contract,
   wc.work_center_no,
   wtc.work_day,
+  ifsapp.work_time_calendar_api.get_next_work_day(
+    wc.calendar_id,
+    wtc.work_day
+  ) next_work_day,
   round(sum(
     nvl(
       wtc.working_time
@@ -47,6 +51,7 @@ where wc.work_center_no = :work_center_no
 group by
   wc.contract,
   wc.work_center_no,
+  wc.calendar_id,
   wtc.work_day
 order by
   wc.work_center_no,
