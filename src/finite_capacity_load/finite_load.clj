@@ -3,8 +3,8 @@
             [clojure.java.jdbc :as jdbc]
             [yesql.core :refer [defquery]]))
 
-(defquery drop-finite-load! "finite_capacity_load/sql/drop_finite_load.sql")
-(defquery insert-finite-load! "finite_capacity_load/sql/insert_finite_load.sql")
+(defquery drop! "finite_capacity_load/sql/drop_finite_load.sql")
+(defquery insert! "finite_capacity_load/sql/insert_finite_load.sql")
 
 (defn order-ref [o]
   (reduce
@@ -22,17 +22,6 @@
              (select-keys s [:work_center_no])))
     (:load s)))
 
-(defn >insert-finite-loads!
-  [db <fs & [n]]
-  (async/merge
-    (map
-      (fn [_]
-        (async/go-loop
-          []
-          (if-let [s (async/<! <fs)]
-            (do
-              (doseq [l (finite-schedule->finite-load s)]
-                (insert-finite-load! l {:connection db}))
-              (recur))
-            :done)))
-      (range (or n 1)))))
+(defn insert-finite-loads! [db s]
+  (doseq [l (finite-schedule->finite-load s)]
+    (insert! l db)))

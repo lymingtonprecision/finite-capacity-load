@@ -1,6 +1,23 @@
 select
+  wc.contract,
   wc.work_center_no,
   wtc.work_day,
+  round(sum(
+    nvl(
+      wtc.working_time
+      * (ra.efficiency / 100)
+      * (wc.utilization / 100),
+      0
+    )
+  ), 0) capacity,
+  round(sum(
+    nvl(
+      ifsapp.work_center_int_api.work_center_maint_load(
+        wtc.work_day, wc.contract, wc.work_center_no
+      ),
+      0
+    ) * 60
+  ), 0) maintenance,
   round(sum(
     nvl(
       wtc.working_time
