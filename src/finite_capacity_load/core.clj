@@ -27,59 +27,69 @@
 (defn process-free-capacity-entry! [db fc]
   (fc/insert! fc db))
 
-(defn <process-queue [<q f]
-  (async/go-loop
-    []
-    (if-let [v (async/<! <q)]
-      (do
-        (f v)
-        (recur)))))
-
-(defn perform-work-center-transactions! [db wc s f]
-  (let [<s (async/to-chan s)
-        <f (async/to-chan f)]
-    (jdbc/with-db-transaction [tx db]
-      (drop-work-center! {:connection tx} wc)
-      (let [<p (async/merge
-                 [(<process-queue
-                    <s (partial process-schedule-entry! {:connection tx}))
-                  (<process-queue
-                    <f (partial process-free-capacity-entry! {:connection tx}))])]
-        (loop
-          []
-          (if-let [_ (async/<!! <p)]
-            (recur)))))))
-
 (defn process-work-center [db wc]
   (let [c (wc/capacity-per-day wc {:connection db})
         l (wc/infinite-load wc {:connection db})
         s (into [] (fs/finite-scheduler c) l)
         f (into [] fc/free-capacity-accumulator s)]
-    (perform-work-center-transactions! db wc s f)))
+    [wc s f]))
 
 (defn <processor
   "Given a database connection (pool, preferably) and a queue of work center
   records starts a loop that will take a work center from the queue, process
   it as a single transaction, and repeat until the queue is empty"
-  [db <wcq]
+  [db <wcq >r]
   (async/go
     (jdbc/with-db-connection [c db]
       (loop
         []
         (if-let [wc (async/<! <wcq)]
           (do
-            (process-work-center c wc)
+            (async/>! >r (process-work-center c wc))
             (recur)))))))
+
+(defn <result-writer [db <r]
+  (async/go
+    (let  [c (jdbc/get-connection db)
+           db {:connection {:connection c}}
+           ac (.getAutoCommit c)]
+      (.setAutoCommit c false)
+      (try
+        (loop
+          []
+          (if-let [[wc s ft] (async/<! <r)]
+            (do
+              (drop-work-center! db wc)
+              (doseq [e s] (process-schedule-entry! db e))
+              (doseq [e ft] (process-free-capacity-entry! db e))
+              (recur))
+            (do
+              (.commit c))))
+        (catch Throwable t
+          (.rollback c)
+          (throw t))
+        (finally
+          (.setAutoCommit c ac)
+          (.close c))))))
 
 (defn generate-new-finite-schedule! [system]
   (let [db (select-keys (:db system) [:datasource])
         n (:workers (:env system) default-num-processors)
         <wcs (jdbc/with-db-connection [c db]
                (async/to-chan (wc/active-work-centers {} {:connection c})))
-        _ (log/info "scheduling started with" n "workers")
-        <l (async/merge (map (fn [_] (<processor db <wcs)) (range n)))]
-    (loop
+        <>r (async/chan 1000)
+        _ (log/info "scheduling started with" n "workers," (/ n 2) "writers")
+        <l (async/merge (map (fn [_] (<processor db <wcs <>r)) (range n)))
+        <w (async/merge (map (fn [_] (<result-writer db <>r)) (range (/ n 2))))]
+    (async/go-loop
       []
-      (if-let [s (async/<!! <l)]
-        (recur)))
-    (log/info "scheduling complete")))
+      (if-let [s (async/<! <l)]
+        (recur)
+        (do
+          (log/info "processing finished, waiting on writers")
+          (async/close! <>r))))
+    (async/go-loop
+      []
+      (if-let [s (async/<! <w)]
+        (recur)
+        (log/info "writing finished")))))
