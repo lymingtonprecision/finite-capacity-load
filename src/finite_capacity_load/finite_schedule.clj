@@ -11,6 +11,9 @@
            (fn [x y] (compare (:work_day x) (:work_day y)))
            capacity)))
 
+(defn merge-consumption-fields [m]
+  (merge {:capacity_consumed 0 :load []} m))
+
 (defn remaining-capacity [d]
   (if-let [a (:capacity_available d)]
     (max 0 (- a (get d :capacity_consumed 0)))))
@@ -69,13 +72,14 @@
         ([] (step))
         ([r]
          (step (reduce step r
-                       (map #(merge {:capacity_consumed 0 :load []} %)
-                            @remaining-capacity))))
+                       (map merge-consumption-fields @remaining-capacity))))
         ([r l]
          (let [[consumed unconsumed] (schedule-order @remaining-capacity l)]
            (vreset! remaining-capacity (sorted-capacity unconsumed))
            (if (seq consumed)
-             (reduce step r consumed)
+             (reduce (fn [r l]
+                       (->> l merge-consumption-fields (step r)))
+                     r consumed)
              r)))))))
 
 (defn <finite-schedule
