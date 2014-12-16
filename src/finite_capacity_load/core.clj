@@ -64,12 +64,14 @@
   records starts a loop that will take a work center from the queue, process
   it as a single transaction, and repeat until the queue is empty"
   [db <wcq]
-  (async/go-loop
-    []
-    (if-let [wc (async/<! <wcq)]
-      (do
-        (process-work-center db wc)
-        (recur)))))
+  (async/go
+    (jdbc/with-db-connection [c db]
+      (loop
+        []
+        (if-let [wc (async/<! <wcq)]
+          (do
+            (process-work-center c wc)
+            (recur)))))))
 
 (defn generate-new-finite-schedule! [system]
   (let [db (:db system)

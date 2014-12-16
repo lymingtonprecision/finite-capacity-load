@@ -12,7 +12,7 @@
     {:auto-commit true
      :read-only false
      :minimum-idle 2
-     :maximum-pool-size 10
+     :maximum-pool-size 20
      :adapter "oracle"
      :driver-type "thin"
      :port-number 1521}))
