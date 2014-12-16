@@ -19,6 +19,6 @@
                  [ragtime "0.3.8"]]
 
   :main finite-capacity-load.main
-  :aot [finite-capacity-load.main]
 
-  :profiles {:dev {:dependencies [[org.clojure/tools.namespace "0.2.7"]]}})
+  :profiles {:dev {:dependencies [[org.clojure/tools.namespace "0.2.7"]]}
+             :uberjar {:aot [finite-capacity-load.main]}})
