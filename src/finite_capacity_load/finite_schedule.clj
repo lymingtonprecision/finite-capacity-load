@@ -15,8 +15,7 @@
   (merge {:capacity_consumed 0 :load []} m))
 
 (defn remaining-capacity [d]
-  (if-let [a (:capacity_available d)]
-    (max 0 (- a (get d :capacity_consumed 0)))))
+  (max 0 (:capacity_available d 0)))
 
 (defn update-load
   "Updates a work day to incorporate `n` units of load from order `o`
@@ -34,8 +33,9 @@
   [d o n]
   (let [lo (assoc o :work_day (:work_day d) :scheduled_duration n)
         ch (+ n (get d :capacity_consumed 0))
+        ac (max 0 (- (remaining-capacity d) ch))
         l (conj (get d :load []) lo)]
-    (assoc d :capacity_consumed ch :load l)))
+    (assoc d :capacity_available ac :capacity_consumed ch :load l)))
 
 (defn schedule-order
   "Finite schedules `order` using the provided available `capacity`,
