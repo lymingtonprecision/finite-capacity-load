@@ -64,7 +64,23 @@
         (subseq capacity >= {:work_day sd})))))
 
 (defn finite-scheduler
-  "A finite scheduling transducer"
+  "A finite scheduling transducer
+
+  Requires a sequence of `capacity` entries from which to work. Each
+  entry in the sequence should be a map consisting of: `work_day` and
+  `capacity_available` entries.
+
+  Transduced items should be load entries with `expected_start_date` and
+  `total_duration` keys.
+
+  The resulting reductions will be entries from `capacity` with the
+  following changes:
+
+  * `load` a sequence of items that have been scheduled on that day by
+    the transducer
+  * `capacity_consumed` the total capacity consumed by the items in
+    `load`
+  * `capacity_available` the remaining, unconsumed, capacity"
   [capacity]
   (fn [step]
     (let [remaining-capacity (volatile! (sorted-capacity capacity))]
@@ -81,37 +97,3 @@
                        (->> l merge-consumption-fields (step r)))
                      r consumed)
              r)))))))
-
-(defn <finite-schedule
-  "Produces a finite schedule for the list of work centers `wcs` returning a
-  channel onto which the finite schedule entries are put. The returned channel
-  will be closed when the schedule is complete.
-
-  * `wcs` a list of work centers to schedule each entry should be a map with a
-    `:work_center_no` entry
-  * `s` the number of scheduler processes to create
-  * `cfn` a `fn` to call with a work center number to retrieve it's capacity
-  * `lfn` a `fn` to call with a work center number returning the orders to load
-  * `buffer`, optional, the buffer to use on the returned channel, defaults to
-    a fixed buffer of 100 entries"
-  [wcs s cfn lfn & [buffer]]
-  (let [<wc (async/to-chan wcs)
-        <>fs (async/chan (or buffer 100))
-        <m (async/merge
-             (map
-               (fn [_]
-                 (async/go-loop
-                   []
-                   (if-let [{wc :work_center_no} (async/<! <wc)]
-                     (let [s (finite-scheduler (cfn wc))
-                           l (into [] s (lfn wc))]
-                       (doseq [o l] (async/>! <>fs o))
-                       (recur))
-                     :done)))
-               (range s)))]
-    (async/go-loop
-      []
-      (if-let [n (async/<! <m)]
-        (recur)
-        (async/close! <>fs)))
-    <>fs))
