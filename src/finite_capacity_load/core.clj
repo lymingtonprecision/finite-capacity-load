@@ -10,8 +10,6 @@
 
 (def default-num-processors 10)
 
-(defn connection [db] {:connection db})
-
 (defn blank-slate! [db]
   (fl/drop! {} db)
   (fls/drop! {} db)
@@ -41,20 +39,20 @@
   (let [<s (async/to-chan s)
         <f (async/to-chan f)]
     (jdbc/with-db-transaction [tx db]
-      (drop-work-center! (connection tx) wc)
+      (drop-work-center! {:connection tx} wc)
       (let [<p (async/merge
                  [(<process-queue
-                    <s (partial process-schedule-entry! (connection tx)))
+                    <s (partial process-schedule-entry! {:connection tx}))
                   (<process-queue
-                    <f (partial process-free-capacity-entry! (connection tx)))])]
+                    <f (partial process-free-capacity-entry! {:connection tx}))])]
         (loop
           []
           (if-let [_ (async/<!! <p)]
             (recur)))))))
 
 (defn process-work-center [db wc]
-  (let [c (wc/capacity-per-day wc (connection db))
-        l (wc/infinite-load wc (connection db))
+  (let [c (wc/capacity-per-day wc {:connection db})
+        l (wc/infinite-load wc {:connection db})
         s (into [] (fs/finite-scheduler c) l)
         f (into [] fc/free-capacity-accumulator s)]
     (perform-work-center-transactions! db wc s f)))
