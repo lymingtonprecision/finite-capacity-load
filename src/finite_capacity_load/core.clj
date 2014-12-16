@@ -72,9 +72,10 @@
             (recur)))))))
 
 (defn generate-new-finite-schedule! [system]
-  (let [db (:db system)
+  (let [db (select-keys (:db system) [:datasource])
         n (:workers (:env system) default-num-processors)
-        <wcs (async/to-chan (wc/active-work-centers {} (connection db)))
+        <wcs (jdbc/with-db-connection [c db]
+               (async/to-chan (wc/active-work-centers {} {:connection c})))
         _ (log/info "scheduling started")
         <l (async/merge (map (fn [_] (<processor db <wcs)) (range n)))]
     (loop
