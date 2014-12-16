@@ -4,5 +4,5 @@
   (:gen-class))
 
 (defn -main [& args]
-  (let [s (.start (sys/system))]
+  (let [s (sys/start (sys/system))]
     (generate-new-finite-schedule! s)))
