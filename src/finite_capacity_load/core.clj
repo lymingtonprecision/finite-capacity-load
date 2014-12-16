@@ -28,43 +28,32 @@
   (fc/insert! fc db))
 
 (defn process-work-center [db wc]
-  (let [c (wc/capacity-per-day wc {:connection db})
-        l (wc/infinite-load wc {:connection db})
+  (let [c (wc/capacity-per-day wc db)
+        l (wc/infinite-load wc db)
         s (into [] (fs/finite-scheduler c) l)
         f (into [] fc/free-capacity-accumulator s)]
-    [wc s f]))
+    (drop-work-center! db wc)
+    (doseq [e s] (process-schedule-entry! db e))
+    (doseq [e f] (process-free-capacity-entry! db e))))
 
 (defn <processor
   "Given a database connection (pool, preferably) and a queue of work center
   records starts a loop that will take a work center from the queue, process
   it as a single transaction, and repeat until the queue is empty"
-  [db <wcq >r]
+  [db <wcq]
   (async/go
-    (jdbc/with-db-connection [c db]
-      (loop
-        []
-        (if-let [wc (async/<! <wcq)]
-          (do
-            (async/>! >r (process-work-center c wc))
-            (recur)))))))
-
-(defn <result-writer [db <r]
-  (async/go
-    (let  [c (jdbc/get-connection db)
-           db {:connection {:connection c}}
-           ac (.getAutoCommit c)]
+    (let [c (jdbc/get-connection db)
+          db {:connection {:connection c}}
+          ac (.getAutoCommit c)]
       (.setAutoCommit c false)
       (try
         (loop
           []
-          (if-let [[wc s ft] (async/<! <r)]
+          (if-let [wc (async/<! <wcq)]
             (do
-              (drop-work-center! db wc)
-              (doseq [e s] (process-schedule-entry! db e))
-              (doseq [e ft] (process-free-capacity-entry! db e))
+              (process-work-center db wc)
               (recur))
-            (do
-              (.commit c))))
+            (.commit c)))
         (catch Throwable t
           (.rollback c)
           (throw t))
@@ -77,19 +66,10 @@
         n (:workers (:env system) default-num-processors)
         <wcs (jdbc/with-db-connection [c db]
                (async/to-chan (wc/active-work-centers {} {:connection c})))
-        <>r (async/chan 1000)
-        _ (log/info "scheduling started with" n "workers," (/ n 2) "writers")
-        <l (async/merge (map (fn [_] (<processor db <wcs <>r)) (range n)))
-        <w (async/merge (map (fn [_] (<result-writer db <>r)) (range (/ n 2))))]
+        _ (log/info "scheduling started with" n "workers")
+        <l (async/merge (map (fn [_] (<processor db <wcs)) (range n)))]
     (async/go-loop
       []
       (if-let [s (async/<! <l)]
         (recur)
-        (do
-          (log/info "processing finished, waiting on writers")
-          (async/close! <>r))))
-    (async/go-loop
-      []
-      (if-let [s (async/<! <w)]
-        (recur)
-        (log/info "writing finished")))))
+        (log/info "scheduling complete")))))
