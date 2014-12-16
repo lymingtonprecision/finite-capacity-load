@@ -68,8 +68,8 @@
                (async/to-chan (wc/active-work-centers {} {:connection c})))
         _ (log/info "scheduling started with" n "workers")
         <l (async/merge (map (fn [_] (<processor db <wcs)) (range n)))]
-    (async/go-loop
+    (loop
       []
-      (if-let [s (async/<! <l)]
+      (if-let [s (async/<!! <l)]
         (recur)
         (log/info "scheduling complete")))))
