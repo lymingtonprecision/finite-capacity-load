@@ -76,7 +76,7 @@
         n (:workers (:env system) default-num-processors)
         <wcs (jdbc/with-db-connection [c db]
                (async/to-chan (wc/active-work-centers {} {:connection c})))
-        _ (log/info "scheduling started")
+        _ (log/info "scheduling started with" n "workers")
         <l (async/merge (map (fn [_] (<processor db <wcs)) (range n)))]
     (loop
       []
