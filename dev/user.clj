@@ -9,7 +9,14 @@
             [finite-capacity-load.system :as sys]
 
             [clojure.java.jdbc :as jdbc]
-            [finite-capacity-load.database :as db]))
+            [finite-capacity-load.database :as db]
+
+            [finite-capacity-load.core]
+            [finite-capacity-load.work-center]
+            [finite-capacity-load.finite-load]
+            [finite-capacity-load.finite-load-sum]
+            [finite-capacity-load.finite-schedule]
+            [finite-capacity-load.free-capacity]))
 
 (in-ns 'environ.core)
 
