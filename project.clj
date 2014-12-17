@@ -21,4 +21,8 @@
   :main finite-capacity-load.main
 
   :profiles {:dev {:dependencies [[org.clojure/tools.namespace "0.2.7"]]}
-             :uberjar {:aot [finite-capacity-load.main]}})
+             :uberjar {:aot [finite-capacity-load.main]}
+             :repl {:source-paths ["dev" "src"]}}
+
+  :repl-options {:init-ns user
+                 :init (user/init)})
