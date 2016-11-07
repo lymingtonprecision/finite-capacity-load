@@ -1,4 +1,4 @@
-(defproject finite-capacity-load "1.0.0"
+(defproject finite-capacity-load "1.1.0"
   :description "An infinite -> finite scheduler for IFS"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
