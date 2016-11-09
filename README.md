@@ -38,10 +38,13 @@ following access rights:
     grant create session to user;
     grant create table to user;
     -- selects
+    grant select on ifsapp.active_work_order to user;
     grant select on ifsapp.crp_mach_op_load to user;
     grant select on ifsapp.mach_operation_load to user;
+    grant select on ifsapp.operational_status to user;
     grant select on ifsapp.shop_ord to user;
     grant select on ifsapp.work_center to user;
+    grant select on ifsapp.work_center_resource to user;
     grant select on ifsapp.work_center_resource_avail to user;
     grant select on ifsapp.work_time_counter to user;
     -- apis
