@@ -81,7 +81,8 @@ left outer join ifsapp.work_center_resource_avail ra
     ra.begin_date and
     nvl(ra.end_date, to_date('9999-12-31', 'yyyy-mm-dd'))
 --
-where wc.work_center_no = :work_center_no
+where wc.contract = :contract
+  and wc.work_center_no = :work_center_no
   and wtc.work_day >= trunc(sysdate)
 group by
   wc.contract,

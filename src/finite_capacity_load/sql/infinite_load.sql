@@ -13,7 +13,8 @@ select
   round(sum(l.op_finish_time - l.op_start_time) * 60, 0) total_duration,
   3 rnk
 from ifsapp.crp_mach_op_load l
-where work_center_no = :work_center_no
+where l.contract = :contract
+  and l.work_center_no = :work_center_no
 group by
   l.contract,
   l.part_no,
@@ -44,7 +45,8 @@ join ifsapp.shop_ord so
   on l.order_no = so.order_no
   and l.release_no = so.release_no
   and l.sequence_no = so.sequence_no
-where work_center_no = :work_center_no
+where l.contract = :contract
+  and l.work_center_no = :work_center_no
 group by
   l.contract,
   so.part_no,
